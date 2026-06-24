@@ -131,23 +131,38 @@ function applyInvert(d) {
 
 // ─── FRAME DEFINITIONS ────────────────────────────────────────────────────────
 const FRAMES = [
-  { id: 'none', label: 'Tanpa Frame' }
+  { id: 'none', label: 'Tanpa Frame' },
+  { id: 'frame_1', label: 'Frame 1', src: 'frame/frame 1.png', type: 'strip' },
+  { id: 'frame_2', label: 'Frame 2', src: 'frame/frame 2.png', type: 'strip' },
+  { id: 'frame_3', label: 'Frame 3', src: 'frame/frame 3.png', type: 'strip' },
+  { id: 'frame_4', label: 'Frame 4', src: 'frame/frame 4.png', type: 'strip' },
+  { id: 'frame_5', label: 'Frame 5', src: 'frame/frame 5.png', type: 'strip' },
+  { id: 'frame_polos', label: 'Frame Polos', src: 'frame/frame polos.png', type: 'strip' }
 ];
+
+// Preload static frames
+FRAMES.forEach(f => {
+  if (f.src) {
+    f.imgObj = new Image();
+    f.imgObj.src = f.src;
+  }
+});
+
 
 // ─── STEP NAVIGATION STATE MACHINE ────────────────────────────────────────────
 function goToStep(stepNum) {
   currentStep = stepNum;
-  
+
   // Hide all panels
   panelCapture.classList.remove('active');
   panelFilter.classList.remove('active');
   panelFrame.classList.remove('active');
-  
+
   // Update step indicator classes
   indicatorStep1.classList.remove('active');
   indicatorStep2.classList.remove('active');
   indicatorStep3.classList.remove('active');
-  
+
   if (stepNum === 1) {
     panelCapture.classList.add('active');
     indicatorStep1.classList.add('active');
@@ -168,7 +183,7 @@ function goToStep(stepNum) {
 // ─── CAMERA SERVICES ─────────────────────────────────────────────────────────
 async function startCamera() {
   if (video.srcObject) return; // already active
-  
+
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
@@ -198,28 +213,28 @@ function captureRawFrame() {
   canvas.width = 640;
   canvas.height = 480;
   const ctx = canvas.getContext('2d');
-  
+
   const videoW = video.videoWidth || 640;
   const videoH = video.videoHeight || 480;
-  
+
   // Calculate center-cropped 4:3 bounds
   let cropW = videoW;
   let cropH = videoH;
-  if (videoW / videoH > 4/3) {
-    cropW = videoH * (4/3);
+  if (videoW / videoH > 4 / 3) {
+    cropW = videoH * (4 / 3);
   } else {
-    cropH = videoW * (3/4);
+    cropH = videoW * (3 / 4);
   }
-  
+
   const startX = (videoW - cropW) / 2;
   const startY = (videoH - cropH) / 2;
-  
+
   ctx.save();
   ctx.translate(640, 0);
   ctx.scale(-1, 1);
   ctx.drawImage(video, startX, startY, cropW, cropH, 0, 0, 640, 480);
   ctx.restore();
-  
+
   return canvas.toDataURL('image/jpeg', 0.95);
 }
 
@@ -255,14 +270,14 @@ btnStartCapture.addEventListener('click', async () => {
   if (isBusy) return;
   isBusy = true;
   btnStartCapture.disabled = true;
-  
+
   stripProgress.style.display = 'flex';
   rawPhotos = [];
-  
+
   ['dot0', 'dot1', 'dot2'].forEach(id => {
     document.getElementById(id).className = 'dot';
   });
-  
+
   for (let i = 0; i < 3; i++) {
     ['dot0', 'dot1', 'dot2'].forEach((id, j) => {
       const d = document.getElementById(id);
@@ -274,35 +289,35 @@ btnStartCapture.addEventListener('click', async () => {
         d.className = 'dot';
       }
     });
-    
+
     stripNumEl.textContent = i + 1;
-    
+
     const imgUrl = await runCountdownThenCapture();
     rawPhotos.push(imgUrl);
-    
+
     document.getElementById('dot' + i).className = 'dot done';
-    
+
     if (i < 2) await sleep(600);
   }
-  
+
   stripProgress.style.display = 'none';
   btnStartCapture.disabled = false;
   isBusy = false;
-  
+
   goToStep(2);
 });
 
 // ─── STEP 2 FILTER GENERATION & EVENTS ───────────────────────────────────────
 async function applyFilterToImage(rawSrc, filterId) {
   if (filterId === 'none') return rawSrc;
-  
+
   const img = await loadImg(rawSrc);
   const canvas = document.createElement('canvas');
   canvas.width = 640;
   canvas.height = 480;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(img, 0, 0, 640, 480);
-  
+
   const imageData = ctx.getImageData(0, 0, 640, 480);
   const filterDef = FILTERS.find(f => f.id === filterId);
   if (filterDef && filterDef.fn) {
@@ -339,28 +354,28 @@ function drawSampleFilter(canvas, fn) {
 function buildFilters() {
   const grid = document.getElementById('filterGrid');
   grid.innerHTML = '';
-  
+
   FILTERS.forEach(f => {
     const btn = document.createElement('button');
     btn.className = 'filter-btn' + (f.id === currentFilter ? ' active' : '');
     btn.dataset.id = f.id;
-    
+
     const canvas = document.createElement('canvas');
     canvas.width = 60;
     canvas.height = 45;
     drawSampleFilter(canvas, f.fn);
     btn.appendChild(canvas);
-    
+
     const label = document.createElement('span');
     label.textContent = f.label;
     btn.appendChild(label);
-    
+
     btn.addEventListener('click', async () => {
       if (isBusy) return;
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentFilter = f.id;
-      
+
       isBusy = true;
       await updateFilterPreviews();
       isBusy = false;
@@ -385,40 +400,40 @@ btnGoToFrame.addEventListener('click', () => {
 // ─── STEP 3 STITCHING, FRAMES, DOWNLOAD & RESET ──────────────────────────────
 async function generateStitchedStrip() {
   if (rawPhotos.length < 3) return null;
-  
+
   const filteredShots = [];
   for (let i = 0; i < 3; i++) {
     const url = await applyFilterToImage(rawPhotos[i], currentFilter);
     filteredShots.push(url);
   }
-  
+
   const cW = 676;
   const cH = 1730;
   const canvas = document.createElement('canvas');
   canvas.width = cW;
   canvas.height = cH;
   const ctx = canvas.getContext('2d');
-  
+
   // Fill background with white
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, cW, cH);
-  
+
   // Draw 3 photos in vertical strip slots
   const yOffsets = [100, 583, 1066];
   for (let i = 0; i < 3; i++) {
     const img = await loadImg(filteredShots[i]);
     ctx.drawImage(img, 28, yOffsets[i], 620, 465);
   }
-  
+
   // Overlay frame
-  const customDef = customFrames.find(f => f.id === currentFrame);
-  if (customDef && customDef.imgObj && customDef.src) {
-    if (customDef.type === 'strip') {
-      ctx.drawImage(customDef.imgObj, 0, 0, cW, cH);
+  const frameDef = FRAMES.find(f => f.id === currentFrame) || customFrames.find(f => f.id === currentFrame);
+  if (frameDef && frameDef.imgObj && frameDef.src) {
+    if (frameDef.type === 'strip') {
+      ctx.drawImage(frameDef.imgObj, 0, 0, cW, cH);
     } else {
       // Draw single frame on top of each individual photo
       for (let i = 0; i < 3; i++) {
-        ctx.drawImage(customDef.imgObj, 28, yOffsets[i], 620, 465);
+        ctx.drawImage(frameDef.imgObj, 28, yOffsets[i], 620, 465);
       }
     }
   } else {
@@ -427,13 +442,13 @@ async function generateStitchedStrip() {
     ctx.font = 'bold 22px "Plus Jakarta Sans", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('framebox.id', cW / 2, 60);
-    
+
     // Default brand footer text
     ctx.font = '15px "Plus Jakarta Sans", sans-serif';
     ctx.fillStyle = '#8fa3b3';
     ctx.fillText('Where Smiles Become Memories', cW / 2, 1640);
   }
-  
+
   // Draw the serial number ON TOP of everything (so it displays even with custom frames!)
   ctx.save();
   ctx.fillStyle = 'rgba(68, 86, 108, 0.65)'; // user palette text color with 65% opacity
@@ -441,7 +456,7 @@ async function generateStitchedStrip() {
   ctx.textAlign = 'right';
   ctx.fillText(sessionSerialNumber, cW - 28, cH - 20);
   ctx.restore();
-  
+
   return canvas.toDataURL('image/jpeg', 0.95);
 }
 
@@ -450,7 +465,7 @@ function drawCenterCroppedImage(ctx, img, dx, dy, dWidth, dHeight) {
   const imgW = img.width;
   const imgH = img.height;
   const targetRatio = dWidth / dHeight;
-  
+
   let sWidth = imgW;
   let sHeight = imgH;
   if (imgW / imgH > targetRatio) {
@@ -458,10 +473,10 @@ function drawCenterCroppedImage(ctx, img, dx, dy, dWidth, dHeight) {
   } else {
     sHeight = imgW / targetRatio;
   }
-  
+
   const sx = (imgW - sWidth) / 2;
   const sy = (imgH - sHeight) / 2;
-  
+
   ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
 }
 
@@ -471,7 +486,7 @@ function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, font, color) {
   const words = text.split(' ');
   let line = '';
   let currentY = y;
-  
+
   for (let n = 0; n < words.length; n++) {
     const testLine = line + words[n] + ' ';
     const metrics = ctx.measureText(testLine);
@@ -490,87 +505,87 @@ function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, font, color) {
 
 async function generateNewspaperLayout() {
   if (rawPhotos.length < 3) return null;
-  
+
   const filteredShots = [];
   for (let i = 0; i < 3; i++) {
     const url = await applyFilterToImage(rawPhotos[i], currentFilter);
     filteredShots.push(url);
   }
-  
+
   const cW = 1200;
   const cH = 1600;
   const canvas = document.createElement('canvas');
   canvas.width = cW;
   canvas.height = cH;
   const ctx = canvas.getContext('2d');
-  
+
   // Fill background with warm vintage cream (palette secondary)
   ctx.fillStyle = '#FAF6EF';
   ctx.fillRect(0, 0, cW, cH);
-  
+
   const txtColor = '#44566C'; // palette text color
   const accentColor = '#8fa3b3';
-  
+
   // ─── DRAW HEADER ───
   ctx.fillStyle = txtColor;
   ctx.font = 'bold 14px "Georgia", serif';
   ctx.textAlign = 'left';
   ctx.fillText('WHERE SMILE BECOME MEMORIES', 60, 60);
-  
+
   ctx.textAlign = 'center';
   ctx.fillText('NEWSPAPER', cW / 2, 60);
-  
+
   ctx.textAlign = 'right';
   ctx.fillText('FRAMEBOX.ID', cW - 60, 60);
-  
+
   ctx.strokeStyle = txtColor;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(60, 80);
   ctx.lineTo(cW - 60, 80);
   ctx.stroke();
-  
+
   ctx.fillStyle = txtColor;
   ctx.font = 'bold 84px "Georgia", serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.fillText('PICTURE MEMORIES', cW / 2, 95);
-  
+
   ctx.font = 'bold 28px "Georgia", serif';
   ctx.fillText('NEWSPAPER BY FRAMEBOX.ID', cW / 2, 195);
-  
+
   ctx.strokeStyle = txtColor;
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.moveTo(60, 240);
   ctx.lineTo(cW - 60, 240);
   ctx.stroke();
-  
+
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(60, 248);
   ctx.lineTo(cW - 60, 248);
   ctx.stroke();
-  
+
   // ─── DRAW CONTENT ───
   const img1 = await loadImg(filteredShots[0]);
   drawCenterCroppedImage(ctx, img1, 60, 270, 1080, 500);
-  
+
   ctx.strokeStyle = 'rgba(68, 86, 108, 0.3)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(60, 790);
   ctx.lineTo(cW - 60, 790);
   ctx.stroke();
-  
+
   // Row 2
   const leftColX = 60;
   const leftColY = 810;
   const leftColWidth = 440;
-  
+
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  
+
   const nextY = drawWrappedText(
     ctx,
     'WHAT A GREAT DAY TO CAPTURE YOUR MEMORIES',
@@ -581,7 +596,7 @@ async function generateNewspaperLayout() {
     'bold 24px "Georgia", serif',
     txtColor
   );
-  
+
   const article1 = 'Memories are recollections of past experiences and information, created through the brain\'s processes of encoding, storing, and retrieving. They are fundamental to a sense of self and can be happy or sad, and may be shared through stories or photos. The term "Memories" also refers to a 2019 song. People often share memories by telling stories, looking at old photos, or watching home movies. Memory is the process of encoding, storing, and retrieving experiences and knowledge, and its many guises are even more important than you think. It is hard to overstate the importance of memory. It is what makes us who we are.';
   drawWrappedText(
     ctx,
@@ -593,23 +608,23 @@ async function generateNewspaperLayout() {
     '500 13px "Georgia", serif',
     txtColor
   );
-  
+
   const img2 = await loadImg(filteredShots[1]);
   drawCenterCroppedImage(ctx, img2, 560, 810, 580, 435);
-  
+
   ctx.beginPath();
   ctx.moveTo(60, 1265);
   ctx.lineTo(cW - 60, 1265);
   ctx.stroke();
-  
+
   // Row 3
   const img3 = await loadImg(filteredShots[2]);
   drawCenterCroppedImage(ctx, img3, 60, 1285, 460, 345);
-  
+
   const rightColX = 560;
   const rightColY = 1285;
   const rightColWidth = 580;
-  
+
   const nextY2 = drawWrappedText(
     ctx,
     'BACK TO MEMORIES',
@@ -620,7 +635,7 @@ async function generateNewspaperLayout() {
     'bold 28px "Georgia", serif',
     txtColor
   );
-  
+
   const subHeading = 'ORDINARY DAYS INTO LASTING TREASURES.';
   const nextY3 = drawWrappedText(
     ctx,
@@ -632,7 +647,7 @@ async function generateNewspaperLayout() {
     'bold 14px "Georgia", serif',
     accentColor
   );
-  
+
   const article2 = 'Capturing memories is about freezing moments that tell a story. Every smile, laugh, or glance holds meaning. Photos let us revisit these feelings, keeping small details alive long after the moment passes. Each snapshot becomes a piece of our personal history. Memories gain more value when shared. Taking a photo together creates connection and joy. It reminds us of bonds with friends, family, and loved ones.';
   drawWrappedText(
     ctx,
@@ -644,7 +659,7 @@ async function generateNewspaperLayout() {
     '500 13px "Georgia", serif',
     txtColor
   );
-  
+
   // ─── DRAW FOOTER ───
   ctx.strokeStyle = txtColor;
   ctx.lineWidth = 1.5;
@@ -652,30 +667,30 @@ async function generateNewspaperLayout() {
   ctx.moveTo(60, 1650);
   ctx.lineTo(cW - 60, 1650);
   ctx.stroke();
-  
+
   ctx.textBaseline = 'middle';
   ctx.fillStyle = txtColor;
   ctx.font = 'bold 14px "Georgia", serif';
-  
+
   ctx.textAlign = 'left';
   ctx.fillText('NEWSBOOTH', 60, 1670);
-  
+
   ctx.textAlign = 'center';
   ctx.fillText(`@FRAMEBOX.ID - ${sessionSerialNumber}`, cW / 2, 1670);
-  
+
   ctx.textAlign = 'right';
   ctx.fillText('01', cW - 60, 1670);
-  
+
   return canvas.toDataURL('image/jpeg', 0.95);
 }
 
 async function updateFinalPreview() {
   const finalPreview = document.getElementById('finalStripPreview');
-  
+
   if (layoutMode === 'newspaper') {
     finalPreview.style.width = '420px';
     finalPreview.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="250" height="333" viewBox="0 0 250 333"><rect width="100%" height="100%" fill="%23FAF6EF"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%2344566C">Sedang memproses...</text></svg>';
-    
+
     const stripDataUrl = await generateNewspaperLayout();
     if (stripDataUrl) {
       finalPreview.src = stripDataUrl;
@@ -683,7 +698,7 @@ async function updateFinalPreview() {
   } else {
     finalPreview.style.width = '250px';
     finalPreview.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="250" height="640" viewBox="0 0 250 640"><rect width="100%" height="100%" fill="%23FAF6EF"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%2344566C">Sedang memproses...</text></svg>';
-    
+
     const stripDataUrl = await generateStitchedStrip();
     if (stripDataUrl) {
       finalPreview.src = stripDataUrl;
@@ -694,7 +709,7 @@ async function updateFinalPreview() {
 function buildFrames() {
   const grid = document.getElementById('frameGrid');
   grid.innerHTML = '';
-  
+
   // 1. Tanpa Frame
   FRAMES.forEach(f => {
     const btn = document.createElement('button');
@@ -709,7 +724,7 @@ function buildFrames() {
     });
     grid.appendChild(btn);
   });
-  
+
   // 2. Custom Frames
   customFrames.forEach(f => {
     if (!f.src) return;
@@ -723,13 +738,13 @@ function buildFrames() {
       currentFrame = f.id;
       await updateFinalPreview();
     });
-    
+
     // Right click option to delete
     btn.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       showDeleteContextMenu(e, f.id, f.label);
     });
-    
+
     grid.appendChild(btn);
   });
 }
@@ -752,7 +767,7 @@ btnNewSession.addEventListener('click', () => {
   currentFrame = 'none';
   sessionSerialNumber = generateSerialNumber();
   layoutMode = 'strip';
-  
+
   if (btnModeStrip && btnModeNewspaper) {
     btnModeStrip.classList.add('active');
     btnModeNewspaper.classList.remove('active');
@@ -760,22 +775,22 @@ btnNewSession.addEventListener('click', () => {
   if (frameSelectionSection) {
     frameSelectionSection.style.display = 'block';
   }
-  
+
   // Reset filter grid visual active state
   document.querySelectorAll('.filter-btn').forEach(b => {
     if (b.dataset.id === 'none') b.classList.add('active');
     else b.classList.remove('active');
   });
-  
+
   // Reset frame grid visual active state
   buildFrames();
-  
+
   stopCamera();
-  
+
   if (landingOverlay) {
     landingOverlay.classList.remove('fade-out');
   }
-  
+
   currentStep = 1;
 });
 
@@ -810,12 +825,12 @@ if (btnSettingsToggle && btnCloseDrawer && drawerOverlay && settingsDrawer) {
     settingsDrawer.classList.add('open');
     drawerOverlay.classList.add('open');
   });
-  
+
   const closeDrawer = () => {
     settingsDrawer.classList.remove('open');
     drawerOverlay.classList.remove('open');
   };
-  
+
   btnCloseDrawer.addEventListener('click', closeDrawer);
   drawerOverlay.addEventListener('click', closeDrawer);
 }
@@ -878,7 +893,7 @@ function addCustomFrameSlot() {
 
 function renderCustomSlots() {
   customSlotsList.innerHTML = '';
-  
+
   if (customFrames.length === 0) {
     const emptyMsg = document.createElement('p');
     emptyMsg.className = 'slots-empty-msg';
@@ -886,16 +901,16 @@ function renderCustomSlots() {
     customSlotsList.appendChild(emptyMsg);
     return;
   }
-  
+
   customFrames.forEach((f, idx) => {
     const slotCard = document.createElement('div');
     slotCard.className = 'slot-card' + (f.src ? ' has-file' : '') + (f.isEditing ? ' editing' : ' collapsed');
-    
+
     if (f.isEditing) {
       // Edit Mode
       const slotHeader = document.createElement('div');
       slotHeader.className = 'slot-header';
-      
+
       const labelInput = document.createElement('input');
       labelInput.type = 'text';
       labelInput.className = 'slot-label-input';
@@ -906,36 +921,36 @@ function renderCustomSlots() {
         saveCustomFramesToStorage();
         buildFrames();
       });
-      
+
       const typeLabel = document.createElement('label');
       typeLabel.className = 'slot-type-label';
       typeLabel.textContent = 'Tipe:';
-      
+
       const typeSelect = document.createElement('select');
       typeSelect.className = 'slot-type-select';
-      
+
       const optSingle = document.createElement('option');
       optSingle.value = 'single';
       optSingle.textContent = 'Single';
       optSingle.selected = f.type !== 'strip';
-      
+
       const optStrip = document.createElement('option');
       optStrip.value = 'strip';
       optStrip.textContent = 'Strip';
       optStrip.selected = f.type === 'strip';
-      
+
       typeSelect.appendChild(optSingle);
       typeSelect.appendChild(optStrip);
-      
+
       typeSelect.addEventListener('change', (e) => {
         f.type = e.target.value;
         saveCustomFramesToStorage();
         buildFrames();
         renderCustomSlots();
       });
-      
+
       typeLabel.appendChild(typeSelect);
-      
+
       const btnOk = document.createElement('button');
       btnOk.type = 'button';
       btnOk.className = 'btn-slot-ok';
@@ -949,7 +964,7 @@ function renderCustomSlots() {
         renderCustomSlots();
         buildFrames();
       });
-      
+
       const btnDelSlot = document.createElement('button');
       btnDelSlot.type = 'button';
       btnDelSlot.className = 'btn-del-slot';
@@ -958,29 +973,29 @@ function renderCustomSlots() {
       btnDelSlot.addEventListener('click', () => {
         removeCustomFrameSlot(f.id);
       });
-      
+
       slotHeader.appendChild(labelInput);
       slotHeader.appendChild(typeLabel);
       slotHeader.appendChild(btnOk);
       slotHeader.appendChild(btnDelSlot);
       slotCard.appendChild(slotHeader);
-      
+
       // Upload/Preview Zone
       const slotBody = document.createElement('div');
       slotBody.className = 'slot-body';
-      
+
       if (f.src) {
         const previewImg = document.createElement('img');
         previewImg.src = f.src;
         previewImg.className = 'slot-preview-img';
-        
+
         const fileInfo = document.createElement('div');
         fileInfo.className = 'slot-file-info';
-        
+
         const changeBtn = document.createElement('label');
         changeBtn.className = 'btn-change-file';
         changeBtn.textContent = 'Ganti PNG';
-        
+
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = 'image/png';
@@ -990,17 +1005,17 @@ function renderCustomSlots() {
             handleSlotFileUpload(f.id, e.target.files[0]);
           }
         });
-        
+
         changeBtn.appendChild(fileInput);
         fileInfo.appendChild(changeBtn);
-        
+
         slotBody.appendChild(previewImg);
         slotBody.appendChild(fileInfo);
       } else {
         const dropZone = document.createElement('div');
         dropZone.className = 'slot-drop-zone';
         dropZone.innerHTML = `<span>Drag & drop / Klik untuk upload PNG</span>`;
-        
+
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = 'image/png';
@@ -1010,9 +1025,9 @@ function renderCustomSlots() {
             handleSlotFileUpload(f.id, e.target.files[0]);
           }
         });
-        
+
         dropZone.appendChild(fileInput);
-        
+
         dropZone.addEventListener('dragover', (e) => {
           e.preventDefault();
           dropZone.classList.add('drag-over');
@@ -1027,12 +1042,12 @@ function renderCustomSlots() {
             handleSlotFileUpload(f.id, e.dataTransfer.files[0]);
           }
         });
-        
+
         slotBody.appendChild(dropZone);
       }
-      
+
       slotCard.appendChild(slotBody);
-      
+
       if (f.type === 'strip') {
         const infoBox = document.createElement('div');
         infoBox.className = 'slot-info-box';
@@ -1050,19 +1065,19 @@ function renderCustomSlots() {
       // Collapsed Mode
       const slotCollapsedWrap = document.createElement('div');
       slotCollapsedWrap.className = 'slot-collapsed-wrap';
-      
+
       const previewImg = document.createElement('img');
       previewImg.src = f.src || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23B7D7EE" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
       previewImg.className = 'slot-mini-preview';
-      
+
       const titleSpan = document.createElement('span');
       titleSpan.className = 'slot-collapsed-title';
       titleSpan.textContent = f.label || `Frame Custom ${idx + 1}`;
-      
+
       const typeBadge = document.createElement('span');
       typeBadge.className = 'slot-type-badge';
       typeBadge.textContent = f.type === 'strip' ? 'Strip' : 'Single';
-      
+
       const btnEdit = document.createElement('button');
       btnEdit.type = 'button';
       btnEdit.className = 'btn-slot-edit';
@@ -1071,7 +1086,7 @@ function renderCustomSlots() {
         f.isEditing = true;
         renderCustomSlots();
       });
-      
+
       const btnDelSlot = document.createElement('button');
       btnDelSlot.type = 'button';
       btnDelSlot.className = 'btn-del-slot';
@@ -1080,7 +1095,7 @@ function renderCustomSlots() {
       btnDelSlot.addEventListener('click', () => {
         removeCustomFrameSlot(f.id);
       });
-      
+
       slotCollapsedWrap.appendChild(previewImg);
       slotCollapsedWrap.appendChild(titleSpan);
       slotCollapsedWrap.appendChild(typeBadge);
@@ -1097,7 +1112,7 @@ function handleSlotFileUpload(slotId, file) {
     alert('Gunakan file PNG (dengan background transparan).');
     return;
   }
-  
+
   const reader = new FileReader();
   reader.onload = (e) => {
     const f = customFrames.find(item => item.id === slotId);
@@ -1112,7 +1127,10 @@ function handleSlotFileUpload(slotId, file) {
         saveCustomFramesToStorage();
         renderCustomSlots();
         buildFrames();
-        if (currentFrame === slotId && currentStep === 3) {
+
+        // Otomatis pilih frame yang baru diupload
+        currentFrame = slotId;
+        if (currentStep === 3) {
           updateFinalPreview();
         }
       };
@@ -1145,16 +1163,16 @@ let activeContextMenu = null;
 
 function showDeleteContextMenu(e, frameId, frameLabel) {
   hideDeleteContextMenu();
-  
+
   const menu = document.createElement('div');
   menu.className = 'custom-context-menu';
   menu.style.left = e.pageX + 'px';
   menu.style.top = e.pageY + 'px';
-  
+
   const title = document.createElement('div');
   title.className = 'context-menu-title';
   title.textContent = frameLabel || 'Frame Custom';
-  
+
   const deleteBtn = document.createElement('button');
   deleteBtn.className = 'context-menu-btn';
   deleteBtn.innerHTML = '🗑️ Hapus Frame';
@@ -1164,12 +1182,12 @@ function showDeleteContextMenu(e, frameId, frameLabel) {
     }
     hideDeleteContextMenu();
   });
-  
+
   menu.appendChild(title);
   menu.appendChild(deleteBtn);
   document.body.appendChild(menu);
   activeContextMenu = menu;
-  
+
   menu.addEventListener('click', (ev) => ev.stopPropagation());
 }
 
