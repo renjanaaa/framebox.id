@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>framebox.id</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- Landing Splash Screen -->
+  <div class="landing-overlay" id="landingOverlay">
+    <div class="landing-content">
+      <img src="logo.png" alt="framebox.id logo" class="landing-logo">
+      <h1 class="landing-title">framebox.id</h1>
+      <p class="landing-subtitle">Where Smiles Become Memories</p>
+      <button class="btn-start-session" id="btnStartSession">Mulai Sesi Foto</button>
+    </div>
+  </div>
+
+  <header>
+    <div class="brand-wrap">
+      <img src="logo.png" alt="framebox.id logo" class="brand-logo" id="brandLogo">
+      <div class="brand-text">
+        <h1 id="brandName">framebox.id</h1>
+        <p>Where Smiles Become Memories.</p>
+      </div>
+      <button class="btn-settings-toggle" id="btnSettingsToggle" type="button">⚙️ Kelola Frame</button>
+    </div>
+  </header>
+
+  <!-- Progress Bar (Wizard Steps) -->
+  <div class="wizard-steps-container" id="wizardSteps">
+    <div class="wizard-step active" id="indicator-step1">
+      <span class="step-num">1</span>
+      <span class="step-label">Ambil Foto</span>
+    </div>
+    <div class="wizard-step-arrow">➔</div>
+    <div class="wizard-step" id="indicator-step2">
+      <span class="step-num">2</span>
+      <span class="step-label">Pilih Filter</span>
+    </div>
+    <div class="wizard-step-arrow">➔</div>
+    <div class="wizard-step" id="indicator-step3">
+      <span class="step-num">3</span>
+      <span class="step-label">Pilih Frame & Download</span>
+    </div>
+  </div>
+
+  <div class="wizard-flow-container">
+    
+    <!-- LANGKAH 1: AMBIL FOTO -->
+    <div class="wizard-panel active" id="panel-capture">
+      <div class="layout">
+        <!-- KIRI: Kamera Viewport -->
+        <div class="cam-col">
+          <div class="cam-wrap" id="camWrap">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="filterCanvas"></canvas>
+            <canvas id="frameCanvas"></canvas>
+            <div class="countdown" id="countdown"></div>
+            <div class="flash" id="flash"></div>
+            <div class="no-cam" id="noCam">
+              <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path d="M23 7l-7 5 7 5V7z" />
+                <rect x="1" y="5" width="15" height="14" rx="2" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+              <span>Kamera tidak tersedia</span>
+            </div>
+          </div>
+          
+          <div class="cam-controls">
+            <button class="btn-main btn-large" id="btnStartCapture">Mulai Sesi Foto (3 Foto)</button>
+            <label class="timer-label">
+              Jeda Timer:
+              <select id="timerSelect">
+                <option value="3">3 Detik</option>
+                <option value="5" selected>5 Detik</option>
+                <option value="10">10 Detik</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="strip-progress" id="stripProgress" style="display:none">
+            Foto <span id="stripNum">1</span> dari 3
+            <div class="strip-dots">
+              <div class="dot" id="dot0"></div>
+              <div class="dot" id="dot1"></div>
+              <div class="dot" id="dot2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LANGKAH 2: PILIH FILTER -->
+    <div class="wizard-panel" id="panel-filter">
+      <div class="layout">
+        <!-- KIRI: Kolom Previews 3 Foto Mentah -->
+        <div class="previews-col">
+          <div class="panel-section-title">Hasil Foto Mentah</div>
+          <div class="previews-vertical-grid">
+            <div class="preview-card"><img id="filterPreview0" alt="Foto 1"></div>
+            <div class="preview-card"><img id="filterPreview1" alt="Foto 2"></div>
+            <div class="preview-card"><img id="filterPreview2" alt="Foto 3"></div>
+          </div>
+        </div>
+        
+        <!-- KANAN: Grid Pilihan Filter -->
+        <div class="side-col">
+          <section>
+            <h2>Pilih Filter Foto</h2>
+            <div class="filter-grid" id="filterGrid"></div>
+          </section>
+          
+          <button class="btn-main next-step-btn" id="btnGoToFrame">Lanjut ke Frame ➔</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LANGKAH 3: PILIH BINGKAI / FRAME -->
+    <div class="wizard-panel" id="panel-frame">
+      <div class="layout">
+        <!-- KIRI: Final Stitched Preview -->
+        <div class="final-strip-col">
+          <div class="panel-section-title">Pratinjau Hasil Akhir</div>
+          <div class="final-strip-wrap">
+            <img id="finalStripPreview" alt="Hasil Akhir Strip Foto">
+          </div>
+        </div>
+        
+        <!-- KANAN: Grid Pilihan Frame & Action Buttons -->
+        <div class="side-col">
+          <section id="layoutModeSection">
+            <h2>Pilih Mode Layout</h2>
+            <div class="layout-mode-selector">
+              <button class="mode-btn active" id="btnModeStrip" type="button">📸 Strip Foto</button>
+              <button class="mode-btn" id="btnModeNewspaper" type="button">📰 Koran (Newspaper)</button>
+            </div>
+          </section>
+          
+          <section id="frameSelectionSection">
+            <h2>Pilih Desain Frame</h2>
+            <div class="frame-grid" id="frameGrid"></div>
+          </section>
+          
+          <div class="action-buttons-wrap">
+            <button class="btn-main download-btn" id="btnDownloadStrip">Download Strip Foto 📥</button>
+            <button class="btn-outline reset-btn" id="btnNewSession">Mulai Sesi Baru 🔄</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Settings Drawer Overlay -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+
+  <!-- Settings Drawer Panel -->
+  <div class="settings-drawer" id="settingsDrawer">
+    <div class="drawer-header">
+      <h3>Kelola Frame Custom</h3>
+      <button class="btn-close-drawer" id="btnCloseDrawer" type="button">✕</button>
+    </div>
+    <div class="drawer-content">
+      <div class="drawer-actions">
+        <button class="btn-add-slot" id="btnAddSlot" type="button">+ Tambah Slot Frame</button>
+      </div>
+      <div class="custom-slots-list" id="customSlotsList"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p>2026 - Framebox.id - Where Smile Become Memories</p>
+  </footer>
+
+  <canvas id="captureCanvas" style="display:none"></canvas>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
