@@ -7,7 +7,7 @@
   <title>framebox.id</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -183,6 +183,10 @@
   </footer>
 
   <canvas id="captureCanvas" style="display:none"></canvas>
+
+  <!-- Preload fonts for Canvas -->
+  <div style="font-family: 'Anton'; position: absolute; visibility: hidden; pointer-events: none;">preload</div>
+  <div style="font-family: 'Oswald'; position: absolute; visibility: hidden; pointer-events: none;">preload</div>
 
   <script src="app.js"></script>
 </body>

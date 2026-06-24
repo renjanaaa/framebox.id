@@ -520,166 +520,22 @@ async function generateNewspaperLayout() {
   const ctx = canvas.getContext('2d');
 
   // Fill background with warm vintage cream (palette secondary)
-  ctx.fillStyle = '#FAF6EF';
+  ctx.fillStyle = '#F5F2EB';
   ctx.fillRect(0, 0, cW, cH);
 
-  const txtColor = '#44566C'; // palette text color
-  const accentColor = '#8fa3b3';
-
-  // ─── DRAW HEADER ───
-  ctx.fillStyle = txtColor;
-  ctx.font = 'bold 14px "Georgia", serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('WHERE SMILE BECOME MEMORIES', 60, 60);
-
-  ctx.textAlign = 'center';
-  ctx.fillText('NEWSPAPER', cW / 2, 60);
-
-  ctx.textAlign = 'right';
-  ctx.fillText('FRAMEBOX.ID', cW - 60, 60);
-
-  ctx.strokeStyle = txtColor;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(60, 80);
-  ctx.lineTo(cW - 60, 80);
-  ctx.stroke();
-
-  ctx.fillStyle = txtColor;
-  ctx.font = 'bold 84px "Georgia", serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText('PICTURE MEMORIES', cW / 2, 95);
-
-  ctx.font = 'bold 28px "Georgia", serif';
-  ctx.fillText('NEWSPAPER BY FRAMEBOX.ID', cW / 2, 195);
-
-  ctx.strokeStyle = txtColor;
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(60, 240);
-  ctx.lineTo(cW - 60, 240);
-  ctx.stroke();
-
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(60, 248);
-  ctx.lineTo(cW - 60, 248);
-  ctx.stroke();
-
-  // ─── DRAW CONTENT ───
+  // Draw 3 photos first (under the frame) at original slots matching the custom frame design
   const img1 = await loadImg(filteredShots[0]);
   drawCenterCroppedImage(ctx, img1, 60, 270, 1080, 500);
-
-  ctx.strokeStyle = 'rgba(68, 86, 108, 0.3)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(60, 790);
-  ctx.lineTo(cW - 60, 790);
-  ctx.stroke();
-
-  // Row 2
-  const leftColX = 60;
-  const leftColY = 810;
-  const leftColWidth = 440;
-
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-
-  const nextY = drawWrappedText(
-    ctx,
-    'WHAT A GREAT DAY TO CAPTURE YOUR MEMORIES',
-    leftColX,
-    leftColY,
-    leftColWidth,
-    30,
-    'bold 24px "Georgia", serif',
-    txtColor
-  );
-
-  const article1 = 'Memories are recollections of past experiences and information, created through the brain\'s processes of encoding, storing, and retrieving. They are fundamental to a sense of self and can be happy or sad, and may be shared through stories or photos. The term "Memories" also refers to a 2019 song. People often share memories by telling stories, looking at old photos, or watching home movies. Memory is the process of encoding, storing, and retrieving experiences and knowledge, and its many guises are even more important than you think. It is hard to overstate the importance of memory. It is what makes us who we are.';
-  drawWrappedText(
-    ctx,
-    article1,
-    leftColX,
-    nextY + 15,
-    leftColWidth,
-    20,
-    '500 13px "Georgia", serif',
-    txtColor
-  );
 
   const img2 = await loadImg(filteredShots[1]);
   drawCenterCroppedImage(ctx, img2, 560, 810, 580, 435);
 
-  ctx.beginPath();
-  ctx.moveTo(60, 1265);
-  ctx.lineTo(cW - 60, 1265);
-  ctx.stroke();
-
-  // Row 3
   const img3 = await loadImg(filteredShots[2]);
   drawCenterCroppedImage(ctx, img3, 60, 1285, 460, 345);
 
-  const rightColX = 560;
-  const rightColY = 1285;
-  const rightColWidth = 580;
-
-  const nextY2 = drawWrappedText(
-    ctx,
-    'BACK TO MEMORIES',
-    rightColX,
-    rightColY,
-    rightColWidth,
-    34,
-    'bold 28px "Georgia", serif',
-    txtColor
-  );
-
-  const subHeading = 'ORDINARY DAYS INTO LASTING TREASURES.';
-  const nextY3 = drawWrappedText(
-    ctx,
-    subHeading,
-    rightColX,
-    nextY2 + 5,
-    rightColWidth,
-    20,
-    'bold 14px "Georgia", serif',
-    accentColor
-  );
-
-  const article2 = 'Capturing memories is about freezing moments that tell a story. Every smile, laugh, or glance holds meaning. Photos let us revisit these feelings, keeping small details alive long after the moment passes. Each snapshot becomes a piece of our personal history. Memories gain more value when shared. Taking a photo together creates connection and joy. It reminds us of bonds with friends, family, and loved ones.';
-  drawWrappedText(
-    ctx,
-    article2,
-    rightColX,
-    nextY3 + 15,
-    rightColWidth,
-    20,
-    '500 13px "Georgia", serif',
-    txtColor
-  );
-
-  // ─── DRAW FOOTER ───
-  ctx.strokeStyle = txtColor;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(60, 1650);
-  ctx.lineTo(cW - 60, 1650);
-  ctx.stroke();
-
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = txtColor;
-  ctx.font = 'bold 14px "Georgia", serif';
-
-  ctx.textAlign = 'left';
-  ctx.fillText('NEWSBOOTH', 60, 1670);
-
-  ctx.textAlign = 'center';
-  ctx.fillText(`@FRAMEBOX.ID - ${sessionSerialNumber}`, cW / 2, 1670);
-
-  ctx.textAlign = 'right';
-  ctx.fillText('01', cW - 60, 1670);
+  // Load and overlay the custom newspaper PNG frame
+  const frameImg = await loadImg('frame/frame koran.png');
+  ctx.drawImage(frameImg, 0, 0, cW, cH);
 
   return canvas.toDataURL('image/jpeg', 0.95);
 }
@@ -687,22 +543,27 @@ async function generateNewspaperLayout() {
 async function updateFinalPreview() {
   const finalPreview = document.getElementById('finalStripPreview');
 
-  if (layoutMode === 'newspaper') {
-    finalPreview.style.width = '420px';
-    finalPreview.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="250" height="333" viewBox="0 0 250 333"><rect width="100%" height="100%" fill="%23FAF6EF"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%2344566C">Sedang memproses...</text></svg>';
+  try {
+    if (layoutMode === 'newspaper') {
+      finalPreview.style.width = '420px';
+      finalPreview.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="250" height="333" viewBox="0 0 250 333"><rect width="100%" height="100%" fill="%23FAF6EF"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%2344566C">Sedang memproses...</text></svg>';
 
-    const stripDataUrl = await generateNewspaperLayout();
-    if (stripDataUrl) {
-      finalPreview.src = stripDataUrl;
-    }
-  } else {
-    finalPreview.style.width = '250px';
-    finalPreview.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="250" height="640" viewBox="0 0 250 640"><rect width="100%" height="100%" fill="%23FAF6EF"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%2344566C">Sedang memproses...</text></svg>';
+      const stripDataUrl = await generateNewspaperLayout();
+      if (stripDataUrl) {
+        finalPreview.src = stripDataUrl;
+      }
+    } else {
+      finalPreview.style.width = '250px';
+      finalPreview.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="250" height="640" viewBox="0 0 250 640"><rect width="100%" height="100%" fill="%23FAF6EF"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%2344566C">Sedang memproses...</text></svg>';
 
-    const stripDataUrl = await generateStitchedStrip();
-    if (stripDataUrl) {
-      finalPreview.src = stripDataUrl;
+      const stripDataUrl = await generateStitchedStrip();
+      if (stripDataUrl) {
+        finalPreview.src = stripDataUrl;
+      }
     }
+  } catch (err) {
+    console.error("Gagal memperbarui pratinjau:", err);
+    finalPreview.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="250" height="300" viewBox="0 0 250 300"><rect width="100%" height="100%" fill="%23FFEEEE"/><text x="50%" y="45%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="12" fill="%23CC0000" font-weight="bold">Gagal memproses pratinjau</text><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="10" fill="%23666666">Cek console log / gunakan server lokal</text></svg>';
   }
 }
 
